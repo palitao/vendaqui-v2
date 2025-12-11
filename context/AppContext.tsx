@@ -198,18 +198,45 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // --- ACTIONS ---
 
   const login = (role: UserRole) => {
-    const newUser: User = {
-      id: '123',
-      name: 'João Silva',
-      email: 'joao@exemplo.com',
-      role: role,
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200',
-      walletBalance: 1250, // 1250 MT in Cashback
-      loyaltyPoints: 350,
-      wishlist: []
-    };
+    let newUser: User;
+    
+    if (role === UserRole.ADMIN) {
+        newUser = {
+            id: 'admin-01',
+            name: 'Administrador',
+            email: 'admin@vendeaqui.co.mz',
+            role: role,
+            avatar: 'https://ui-avatars.com/api/?name=Admin+System&background=0D8ABC&color=fff',
+            walletBalance: 0,
+            loyaltyPoints: 0,
+            wishlist: []
+        };
+    } else if (role === UserRole.SELLER) {
+        newUser = {
+            id: 'seller-01',
+            name: 'TechMoz Solutions',
+            email: 'vendas@techmoz.co.mz',
+            role: role,
+            avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200',
+            walletBalance: 150000,
+            loyaltyPoints: 0,
+            wishlist: []
+        };
+    } else {
+        newUser = {
+            id: '123',
+            name: 'João Silva',
+            email: 'joao@exemplo.com',
+            role: role,
+            avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200',
+            walletBalance: 1250,
+            loyaltyPoints: 350,
+            wishlist: []
+        };
+    }
+    
     setUser(newUser);
-    addNotification('Login Efetuado', `Bem-vindo de volta, João! (${role})`, 'SYSTEM');
+    addNotification('Login Efetuado', `Bem-vindo de volta, ${newUser.name}!`, 'SYSTEM');
   };
 
   const logout = () => {
@@ -267,7 +294,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const addOrder = (order: Order) => {
     setOrders(prev => [order, ...prev]);
-    if (user) {
+    if (user && user.role === UserRole.CUSTOMER) {
         const cashbackEarned = Math.floor(order.total * 0.01); // 1% cashback
         const pointsEarned = Math.floor(order.total / 100); // 1 point per 100 MT
         setUser({

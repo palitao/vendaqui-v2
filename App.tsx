@@ -13,22 +13,11 @@ import {
   Home, Image as ImageIcon, CheckCircle, Smartphone,
   Bell, Info, Check, Minus, Share2, Moon, Sun, Trash2,
   ChevronRight, ArrowRight, CreditCard, MapPin, Users, FileText, Shield, ShoppingBag, List, Heart, DollarSign, Edit, AlertTriangle, Filter, Wand2, ChevronLeft, Zap, Sparkles,
-  Fingerprint, Wallet, Ticket as TicketIcon, TrendingUp, Gift, ShieldAlert, BadgePercent, Package, Upload
+  Fingerprint, Wallet, Ticket as TicketIcon, TrendingUp, Gift, ShieldAlert, BadgePercent, Package, Upload, Activity, AlertOctagon, CheckSquare
 } from 'lucide-react';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area 
 } from 'recharts';
-
-const MOCK_USERS: User[] = [
-  { id: '1', name: 'João Silva', email: 'joao@exemplo.com', role: UserRole.CUSTOMER, avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=200', walletBalance: 1250, loyaltyPoints: 350, wishlist: [] },
-  { id: '2', name: 'TechMoz Lda', email: 'contato@techmoz.com', role: UserRole.SELLER, avatar: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200', walletBalance: 50000, loyaltyPoints: 0, wishlist: [] },
-];
-
-const MOCK_TRANSACTIONS: Transaction[] = [
-    { id: 'TX-9981', user: 'João Silva', amount: 12500, date: 'Hoje, 10:30', riskScore: 12, status: 'Approved' },
-    { id: 'TX-9982', user: 'Maria Langa', amount: 85000, date: 'Hoje, 11:15', riskScore: 85, status: 'Flagged' },
-    { id: 'TX-9983', user: 'Pedro Muianga', amount: 2500, date: 'Ontem', riskScore: 5, status: 'Approved' },
-];
 
 const CATEGORIES = [
   { name: 'Electrónica', icon: Smartphone },
@@ -36,6 +25,13 @@ const CATEGORIES = [
   { name: 'Casa & Cozinha', icon: Home },
   { name: 'Serviços', icon: Zap },
   { name: 'Supermercado', icon: ShoppingCart },
+];
+
+const MOCK_ADMIN_TRANSACTIONS: Transaction[] = [
+    { id: 'TX-9981', user: 'João Silva', amount: 12500, date: 'Hoje, 10:30', riskScore: 12, status: 'Approved' },
+    { id: 'TX-9982', user: 'Maria Langa', amount: 85000, date: 'Hoje, 11:15', riskScore: 85, status: 'Flagged' },
+    { id: 'TX-9983', user: 'Pedro Muianga', amount: 2500, date: 'Ontem', riskScore: 5, status: 'Approved' },
+    { id: 'TX-9984', user: 'Carlos Macamo', amount: 450000, date: 'Ontem', riskScore: 92, status: 'Rejected' },
 ];
 
 // --- COMPONENTS MOVED OUTSIDE OF APP ---
@@ -49,7 +45,7 @@ const Header = ({
   useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-          // Close suggestions logic
+          // Close suggestions logic if implemented explicitly
       }
       };
       document.addEventListener("mousedown", handleClickOutside);
@@ -114,6 +110,10 @@ const Header = ({
                   Explorar
               </button>
               
+              <button onClick={() => setView(PageView.PLANS)} className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:text-primary hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center gap-2">
+                  Planos
+              </button>
+
               <button onClick={() => setView(PageView.AI_STUDIO)} className="ml-2 relative group overflow-hidden px-5 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-sm flex items-center gap-2 shadow-lg shadow-slate-900/20 hover:shadow-xl transition-all">
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   <span className="relative flex items-center gap-2 z-10 group-hover:text-white">
@@ -293,13 +293,17 @@ const Footer = ({ setView }: { setView: (v: PageView) => void }) => (
 );
 
 const CheckoutPage = ({ setView }: any) => {
-  const { cart, addOrder, clearCart, addNotification } = useApp();
+  const { cart, addOrder, clearCart, addNotification, removeFromCart } = useApp();
   const { user } = useApp();
   const [step, setStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleNext = () => {
+    if (cart.length === 0) {
+        addNotification('Carrinho Vazio', 'Adicione produtos antes de prosseguir.', 'SYSTEM');
+        return;
+    }
     setIsLoading(true);
     setTimeout(() => {
       setStep(prev => prev + 1);
@@ -438,8 +442,9 @@ const CheckoutPage = ({ setView }: any) => {
                    <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] shadow-float border border-slate-100 dark:border-slate-700 sticky top-28">
                       <h3 className="font-bold text-xl mb-6 text-slate-900 dark:text-white">Resumo do Pedido</h3>
                       <div className="space-y-6 mb-8 max-h-80 overflow-y-auto pr-2 custom-scrollbar">
+                          {cart.length === 0 && <p className="text-slate-400 text-center py-4">O carrinho está vazio</p>}
                           {cart.map(item => (
-                              <div key={item.id} className="flex gap-4 items-center group">
+                              <div key={item.id} className="flex gap-4 items-center group relative">
                                   <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 flex-shrink-0">
                                       <img src={item.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
                                   </div>
@@ -447,7 +452,10 @@ const CheckoutPage = ({ setView }: any) => {
                                       <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{item.title}</p>
                                       <p className="text-xs text-slate-500 font-medium mt-1">Qtd: {item.quantity}</p>
                                   </div>
-                                  <p className="text-sm font-bold text-slate-900 dark:text-white">{(item.price * item.quantity).toLocaleString()} MT</p>
+                                  <div className="text-right">
+                                      <p className="text-sm font-bold text-slate-900 dark:text-white">{(item.price * item.quantity).toLocaleString()} MT</p>
+                                      <button onClick={() => removeFromCart(item.id)} className="text-[10px] text-red-500 hover:underline">Remover</button>
+                                  </div>
                               </div>
                           ))}
                       </div>
@@ -521,6 +529,225 @@ const DashboardLayout = ({ title, sidebar, children, setView, handleLogout, isDa
       </main>
    </div>
    );
+};
+
+const PlansPage = ({ setView }: any) => {
+    return (
+        <div className="max-w-7xl mx-auto px-4 py-16">
+            <div className="text-center max-w-2xl mx-auto mb-16">
+                <Badge color="bg-blue-100 text-blue-700 mb-4">Planos VendeAqui</Badge>
+                <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white mb-6">Escolha o plano ideal para o seu negócio</h1>
+                <p className="text-lg text-slate-500">Comece pequeno e cresça com a gente. Ferramentas poderosas para todos os estágios.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+                {/* Starter */}
+                <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-700 shadow-soft relative overflow-hidden">
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Starter</h3>
+                    <p className="text-slate-500 text-sm mb-6">Para quem está a começar.</p>
+                    <div className="flex items-baseline mb-8">
+                        <span className="text-4xl font-extrabold text-slate-900 dark:text-white">Gratuito</span>
+                    </div>
+                    <ul className="space-y-4 mb-8">
+                        {[
+                            'Até 10 produtos',
+                            'Comissão de 12%',
+                            'Suporte Básico',
+                            'Pagamentos via M-Pesa'
+                        ].map((item, i) => (
+                            <li key={i} className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                                {item}
+                            </li>
+                        ))}
+                    </ul>
+                    <Button variant="outline" className="w-full" onClick={() => setView(PageView.AUTH)}>Começar Agora</Button>
+                </div>
+
+                {/* Pro */}
+                <div className="bg-slate-900 dark:bg-slate-950 rounded-[2.5rem] p-8 border border-slate-800 shadow-2xl relative overflow-hidden transform scale-105 z-10 text-white">
+                    <div className="absolute top-0 right-0 bg-primary text-white text-xs font-bold px-3 py-1 rounded-bl-xl">Mais Popular</div>
+                    <h3 className="text-xl font-bold mb-2">Profissional</h3>
+                    <p className="text-slate-400 text-sm mb-6">Para lojas em crescimento.</p>
+                    <div className="flex items-baseline mb-8">
+                        <span className="text-4xl font-extrabold">2.500</span>
+                        <span className="text-slate-400 ml-2">MT/mês</span>
+                    </div>
+                    <ul className="space-y-4 mb-8">
+                        {[
+                            'Produtos ilimitados',
+                            'Comissão Reduzida (5%)',
+                            'AI Studio (50 edições/mês)',
+                            'Dashboard Avançado',
+                            'Suporte Prioritário'
+                        ].map((item, i) => (
+                            <li key={i} className="flex items-center gap-3 text-sm text-slate-300">
+                                <Check className="w-5 h-5 text-primary flex-shrink-0" />
+                                {item}
+                            </li>
+                        ))}
+                    </ul>
+                    <Button variant="primary" className="w-full shadow-glow">Assinar Pro</Button>
+                </div>
+
+                {/* Enterprise */}
+                <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] p-8 border border-slate-100 dark:border-slate-700 shadow-soft relative overflow-hidden">
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Enterprise</h3>
+                    <p className="text-slate-500 text-sm mb-6">Para grandes operações.</p>
+                    <div className="flex items-baseline mb-8">
+                        <span className="text-4xl font-extrabold text-slate-900 dark:text-white">Sob Consulta</span>
+                    </div>
+                    <ul className="space-y-4 mb-8">
+                        {[
+                            'API Dedicada',
+                            'Gerente de Conta',
+                            'AI Studio Ilimitado',
+                            'Integração com ERPs',
+                            'SLA de 99.9%'
+                        ].map((item, i) => (
+                            <li key={i} className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300">
+                                <Check className="w-5 h-5 text-green-500 flex-shrink-0" />
+                                {item}
+                            </li>
+                        ))}
+                    </ul>
+                    <Button variant="outline" className="w-full">Falar com Vendas</Button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const AdminDashboard = ({ 
+    adminTab, setAdminTab, ...props 
+  }: any) => {
+    return (
+        <DashboardLayout 
+            title="Administração"
+            sidebar={
+                <>
+                     <button onClick={() => setAdminTab('OVERVIEW')} className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl font-bold text-sm transition-all ${adminTab === 'OVERVIEW' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}><LayoutDashboard className="w-5 h-5"/> Visão Global</button>
+                     <button onClick={() => setAdminTab('TRANSACTIONS')} className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl font-bold text-sm transition-all ${adminTab === 'TRANSACTIONS' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}><Activity className="w-5 h-5"/> Transações</button>
+                     <button onClick={() => setAdminTab('USERS')} className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl font-bold text-sm transition-all ${adminTab === 'USERS' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}><Users className="w-5 h-5"/> Utilizadores</button>
+                     <button onClick={() => setAdminTab('RISK')} className={`w-full flex items-center gap-3 px-4 py-4 rounded-2xl font-bold text-sm transition-all ${adminTab === 'RISK' ? 'bg-primary text-white shadow-lg shadow-primary/30' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}><AlertOctagon className="w-5 h-5"/> Risco & Fraude</button>
+                </>
+            }
+            {...props}
+        >
+            {adminTab === 'OVERVIEW' && (
+                <div className="space-y-8">
+                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        {[
+                            { label: 'Volume Total', val: '4.2M MT', icon: DollarSign, color: 'text-green-500' },
+                            { label: 'Utilizadores', val: '1,240', icon: Users, color: 'text-blue-500' },
+                            { label: 'Vendedores', val: '85', icon: CheckSquare, color: 'text-purple-500' },
+                            { label: 'Risco Alto', val: '12', icon: AlertOctagon, color: 'text-red-500' },
+                        ].map((stat, i) => (
+                            <div key={i} className="bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 shadow-soft">
+                                <div className="flex justify-between items-start mb-4">
+                                    <div className="p-3 bg-slate-50 dark:bg-slate-900 rounded-2xl"><stat.icon className={`w-6 h-6 ${stat.color}`}/></div>
+                                </div>
+                                <h3 className="text-3xl font-extrabold text-slate-900 dark:text-white">{stat.val}</h3>
+                                <p className="text-slate-400 text-sm font-medium">{stat.label}</p>
+                            </div>
+                        ))}
+                     </div>
+                     
+                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-soft h-[400px]">
+                            <h3 className="font-bold text-xl mb-6 dark:text-white">Crescimento da Plataforma</h3>
+                            <ResponsiveContainer width="100%" height="85%">
+                                <AreaChart data={[{n:'Jan',v:100},{n:'Fev',v:120},{n:'Mar',v:180},{n:'Abr',v:250},{n:'Mai',v:300},{n:'Jun',v:420}]}>
+                                    <defs>
+                                        <linearGradient id="colorV" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#2563EB" stopOpacity={0.3}/>
+                                            <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={props.isDarkMode ? '#334155' : '#f1f5f9'} />
+                                    <XAxis dataKey="n" axisLine={false} tickLine={false} />
+                                    <Area type="monotone" dataKey="v" stroke="#2563EB" strokeWidth={3} fillOpacity={1} fill="url(#colorV)" />
+                                    <Tooltip />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-soft h-[400px] overflow-hidden flex flex-col">
+                            <h3 className="font-bold text-xl mb-6 dark:text-white">Alertas Recentes</h3>
+                            <div className="space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+                                {[1,2,3,4,5].map(i => (
+                                    <div key={i} className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50">
+                                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-bold text-slate-900 dark:text-white">Tentativa de Fraude Detectada</p>
+                                            <p className="text-xs text-slate-500">IP suspeito na conta #User-{900+i}</p>
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-400">2 min</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                     </div>
+                </div>
+            )}
+
+            {adminTab === 'TRANSACTIONS' && (
+                <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-100 dark:border-slate-700 shadow-soft overflow-hidden">
+                    <div className="p-8 border-b border-slate-100 dark:border-slate-700">
+                        <h3 className="font-bold text-xl text-slate-900 dark:text-white">Monitoria de Transações</h3>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm min-w-[700px]">
+                            <thead className="bg-white dark:bg-slate-900 text-slate-400 font-bold uppercase tracking-wider text-xs border-b border-slate-100 dark:border-slate-700">
+                                <tr>
+                                    <th className="p-6 pl-8">ID</th>
+                                    <th className="p-6">Utilizador</th>
+                                    <th className="p-6">Valor</th>
+                                    <th className="p-6">Risco (0-100)</th>
+                                    <th className="p-6">Status</th>
+                                    <th className="p-6 text-right pr-8">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                {MOCK_ADMIN_TRANSACTIONS.map(tx => (
+                                    <tr key={tx.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                        <td className="p-6 pl-8 font-bold text-slate-900 dark:text-white">{tx.id}</td>
+                                        <td className="p-6 text-slate-500">{tx.user}</td>
+                                        <td className="p-6 font-bold">{tx.amount.toLocaleString()} MT</td>
+                                        <td className="p-6">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1 h-2 bg-slate-200 rounded-full w-24 overflow-hidden">
+                                                    <div className={`h-full rounded-full ${tx.riskScore > 80 ? 'bg-red-500' : tx.riskScore > 40 ? 'bg-yellow-500' : 'bg-green-500'}`} style={{width: `${tx.riskScore}%`}}></div>
+                                                </div>
+                                                <span className="text-xs font-bold">{tx.riskScore}</span>
+                                            </div>
+                                        </td>
+                                        <td className="p-6">
+                                            <Badge color={tx.status === 'Rejected' ? 'bg-red-100 text-red-700' : tx.status === 'Flagged' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}>
+                                                {tx.status}
+                                            </Badge>
+                                        </td>
+                                        <td className="p-6 pr-8 text-right">
+                                            <Button variant="ghost" size="sm">Detalhes</Button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {(adminTab === 'USERS' || adminTab === 'RISK') && (
+                <div className="text-center py-20">
+                    <div className="bg-slate-100 dark:bg-slate-800 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <Settings className="w-8 h-8 text-slate-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">Módulo em Desenvolvimento</h3>
+                    <p className="text-slate-500 mt-2">Esta funcionalidade estará disponível na próxima atualização do sistema VendeAqui.</p>
+                </div>
+            )}
+        </DashboardLayout>
+    );
 };
 
 const CustomerDashboard = ({ 
@@ -626,7 +853,7 @@ const CustomerDashboard = ({
                            <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">Total Pedidos</p>
                       </div>
                       <h3 className="text-4xl font-extrabold text-slate-900 dark:text-white">{orders.length}</h3>
-                      <p className="text-xs text-slate-400 mt-2">Última compra: {orders[0]?.date}</p>
+                      <p className="text-xs text-slate-400 mt-2">Última compra: {orders[0]?.date || 'N/A'}</p>
                   </div>
               </div>
 
@@ -675,14 +902,18 @@ const CustomerDashboard = ({
           <div>
               <h3 className="text-2xl font-bold mb-8 text-slate-900 dark:text-white">Minha Lista de Desejos ({wishlist.length})</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {useApp().products.filter(p => wishlist.includes(p.id) || wishlist.length === 0 /* Mock: show all if empty for demo */).slice(0, wishlist.length > 0 ? undefined : 3).map(product => (
+                  {useApp().products.filter(p => wishlist.includes(p.id)).length > 0 ? (
+                    useApp().products.filter(p => wishlist.includes(p.id)).map(product => (
                       <ProductCard 
                           key={product.id} 
                           {...product} 
                           onClick={() => navigateToProduct(product)}
                           onAddToCart={() => addToCart(product)} 
                       />
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-slate-500 col-span-3 text-center py-10">Sua lista de desejos está vazia.</p>
+                  )}
               </div>
           </div>
       )}
@@ -1062,6 +1293,7 @@ const App = () => {
   // Dashboard states
   const [customerTab, setCustomerTab] = useState('OVERVIEW');
   const [sellerTab, setSellerTab] = useState('OVERVIEW');
+  const [adminTab, setAdminTab] = useState('OVERVIEW');
   const [isDashboardSidebarOpen, setIsDashboardSidebarOpen] = useState(false);
 
   // Navigation states
@@ -1290,12 +1522,7 @@ const App = () => {
   };
 
   const renderCart = () => {
-      // Basic cart view implemented in CheckoutPage for simplicity or could be separate
-      // For this implementation, let's redirect to checkout if user clicks cart, or show a simple list
-      // Since CheckoutPage has the full cart view, let's use that logic but maybe without the steps if just viewing?
-      // Actually CheckoutPage handles "Cart view" too based on UI design (Summary + Form).
-      // Let's assume PageView.CART redirects to CheckoutPage logic but maybe Step 1 is "Cart Review"
-      // Re-using CheckoutPage for now as it contains the cart summary.
+      // Re-use CheckoutPage logic for cart view as it contains the summary and steps
       return <CheckoutPage setView={setView} />;
   };
 
@@ -1320,6 +1547,13 @@ const App = () => {
                   >
                       Entrar como Vendedor
                   </Button>
+                  <Button 
+                    variant="ghost" 
+                    className="w-full text-sm text-slate-400" 
+                    onClick={() => { login(UserRole.ADMIN); setView(PageView.DASHBOARD_ADMIN); }}
+                  >
+                      Acesso Administrativo
+                  </Button>
                   <div className="pt-6 border-t border-slate-100 dark:border-slate-700 mt-6">
                       <p className="text-xs text-slate-400">Ao entrar, você concorda com nossos Termos de Serviço e Política de Privacidade.</p>
                   </div>
@@ -1335,6 +1569,7 @@ const App = () => {
       case PageView.PRODUCT_DETAIL: return renderProductDetail();
       case PageView.CART: return renderCart();
       case PageView.CHECKOUT: return <CheckoutPage setView={setView} />;
+      case PageView.PLANS: return <PlansPage setView={setView} />;
       case PageView.AI_STUDIO: return (
         <div className="max-w-7xl mx-auto px-4 py-12">
             <GeminiEditor />
@@ -1357,6 +1592,17 @@ const App = () => {
             sellerTab={sellerTab} 
             setSellerTab={setSellerTab}
             navigateToProduct={navigateToProduct}
+            setView={setView}
+            handleLogout={handleLogout}
+            isDashboardSidebarOpen={isDashboardSidebarOpen}
+            setIsDashboardSidebarOpen={setIsDashboardSidebarOpen}
+            isDarkMode={isDarkMode}
+            toggleDarkMode={toggleDarkMode}
+        />;
+      case PageView.DASHBOARD_ADMIN: 
+        return <AdminDashboard 
+            adminTab={adminTab} 
+            setAdminTab={setAdminTab}
             setView={setView}
             handleLogout={handleLogout}
             isDashboardSidebarOpen={isDashboardSidebarOpen}
